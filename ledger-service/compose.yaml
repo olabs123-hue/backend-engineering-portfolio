@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment: {POSTGRES_USER: demo, POSTGRES_PASSWORD: demo, POSTGRES_DB: ledger}
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U demo -d ledger"], interval: 2s, retries: 30}
+    volumes: [ledger_db:/var/lib/postgresql/data]
+  api:
+    build: .
+    ports: ["8001:8000"]
+    depends_on: {db: {condition: service_healthy}}
+volumes: {ledger_db: {}}
