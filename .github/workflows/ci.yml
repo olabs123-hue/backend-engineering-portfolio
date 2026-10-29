@@ -6,9 +6,25 @@ jobs:
     strategy:
       matrix:
         service: [ledger-service, scheduler-service]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: demo
+          POSTGRES_PASSWORD: demo
+          POSTGRES_DB: tests
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U demo -d tests"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     defaults:
       run:
         working-directory: ${{ matrix.service }}
+    env:
+      TEST_DATABASE_URL: postgresql://demo:demo@localhost:5432/tests
+      DATABASE_URL: postgresql://demo:demo@localhost:5432/tests
+      JWT_SECRET: ci-testing-secret-minimum-32-characters-long
+      SCHEDULER_API_KEY: ci-scheduler-secret-minimum-32-characters-long
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
