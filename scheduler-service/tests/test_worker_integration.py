@@ -14,6 +14,7 @@ def db(monkeypatch):
     monkeypatch.setattr(worker,"DB",url)
     with psycopg.connect(url) as conn:
         conn.execute(service.SCHEMA,prepare=False)
+        conn.execute('TRUNCATE TABLE jobs RESTART IDENTITY')
     return url
 
 def test_api_key(db,monkeypatch):
