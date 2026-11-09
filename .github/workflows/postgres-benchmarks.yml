@@ -10,7 +10,7 @@ permissions:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     services:
       postgres:
         image: postgres:16
@@ -57,7 +57,7 @@ jobs:
             --ledger-url http://127.0.0.1:8000 \
             --ledger-db postgresql://demo:demo@127.0.0.1:5432/ledger_bench \
             --scheduler-db postgresql://demo:demo@127.0.0.1:5432/scheduler_bench \
-            --transfers 100 --clients 10 --jobs 100 --workers 10 \
+            --transfers 10000 --clients 20 --jobs 10000 --workers 20 \
             --output benchmark-results.json
       - uses: actions/upload-artifact@v4
         if: always()
