@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Isolated PostgreSQL-backed benchmark; run only against disposable test databases."""
-import argparse, concurrent.futures, json, os, statistics, time, uuid
+import argparse, concurrent.futures, json, os, statistics, time, uuid, threading
 import httpx
 import psycopg
 
@@ -19,10 +19,12 @@ def ledger(base, db, count, workers):
         for owner,balance in (("source",count+100),("sink",0)):
             r=c.post("/accounts",headers=headers,json={"owner":owner,"opening_balance":balance})
             r.raise_for_status(); ids.append(r.json()["id"])
+    local=threading.local()
     def send(i, key=None):
+        if not hasattr(local,'client'):
+            local.client=httpx.Client(base_url=base,timeout=120)
         t=time.perf_counter()
-        with httpx.Client(base_url=base,timeout=30) as c:
-            r=c.post("/transfers",headers=headers,json={"from_id":ids[0],"to_id":ids[1],"amount":1,"idempotency_key":key or f"{run}-transfer-{i:08d}"})
+        r=local.client.post("/transfers",headers=headers,json={"from_id":ids[0],"to_id":ids[1],"amount":1,"idempotency_key":key or f"{run}-transfer-{i:08d}"})
         return (r.status_code,r.json(),time.perf_counter()-t)
     start=time.perf_counter()
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
