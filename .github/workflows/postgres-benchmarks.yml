@@ -1,0 +1,70 @@
+name: postgres-benchmarks
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'benchmarks/**'
+      - '.github/workflows/postgres-benchmarks.yml'
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: demo
+          POSTGRES_PASSWORD: demo
+          POSTGRES_DB: ledger_bench
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U demo -d ledger_bench"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r ledger-service/requirements.txt
+          pip install -r scheduler-service/requirements.txt
+      - name: Create isolated scheduler database
+        env:
+          PGPASSWORD: demo
+        run: psql -h localhost -U demo -d ledger_bench -c 'CREATE DATABASE scheduler_bench'
+      - name: Build ledger image
+        run: docker build -t ledger-benchmark ./ledger-service
+      - name: Start ledger API
+        run: |
+          docker run -d --name ledger-benchmark --network host \
+            -e DATABASE_URL=postgresql://demo:demo@127.0.0.1:5432/ledger_bench \
+            -e JWT_SECRET=benchmark-only-secret-minimum-32-characters-long \
+            ledger-benchmark
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8000/health; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8000/health
+      - name: Run PostgreSQL benchmark and invariants
+        env:
+          DATABASE_URL: postgresql://demo:demo@127.0.0.1:5432/scheduler_bench
+        run: |
+          python benchmarks/postgres_benchmark.py \
+            --ledger-url http://127.0.0.1:8000 \
+            --ledger-db postgresql://demo:demo@127.0.0.1:5432/ledger_bench \
+            --scheduler-db postgresql://demo:demo@127.0.0.1:5432/scheduler_bench \
+            --transfers 100 --clients 10 --jobs 100 --workers 10 \
+            --output benchmark-results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: postgres-benchmark-results
+          path: benchmark-results.json
+          if-no-files-found: warn
+      - name: Ledger logs on failure
+        if: failure()
+        run: docker logs ledger-benchmark || true
