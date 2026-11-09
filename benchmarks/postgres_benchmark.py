@@ -53,12 +53,16 @@ def scheduler(db, count, workers):
     import sys
     sys.path.insert(0,os.path.abspath("scheduler-service"))
     from app.worker import claim,complete
+    from app.main import SCHEMA
     from psycopg.types.json import Jsonb
     with psycopg.connect(db) as conn:
+        conn.execute(SCHEMA,prepare=False)
+        conn.commit()
         conn.execute("TRUNCATE jobs RESTART IDENTITY")
         with conn.cursor() as cur:
             for i in range(count):
                 cur.execute("INSERT INTO jobs(kind,payload) VALUES ('sum',%s)",(Jsonb({"numbers":[i,1]}),))
+        conn.commit()
     def work(_):
         n=0
         with psycopg.connect(db) as conn:
