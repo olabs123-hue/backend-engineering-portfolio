@@ -33,3 +33,11 @@ jobs:
           node-version: '22'
       - run: npm install
       - run: npm run build
+  container-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra-pulse
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --tag infrapulse:ci .
