@@ -8,7 +8,7 @@ type Sample = {id:number;ok:number;latency_ms:number;collected_at:string};
 type Service = {id:number;name:string;description:string;latency_threshold_ms:number;latest:{ok:number;latency_ms:number;collected_at:string}|null;open_alerts:number};
 type Alert = {id:number;service_name:string;level:string;message:string;created_at:string};
 type Summary = {services:number;healthy:number;open_alerts:number;samples:number};
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : '');
 async function get<T>(path:string):Promise<T>{const r=await fetch(API+path);if(!r.ok)throw new Error(`API returned ${r.status}`);return r.json();}
 const time = (s:string)=>new Date(s).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 function App(){
