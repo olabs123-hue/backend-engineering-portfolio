@@ -88,6 +88,12 @@ cd frontend && npm run build
 | POST | `/api/services` | `X-Ingest-Token` |
 | POST | `/api/services/{id}/samples` | `X-Ingest-Token` |
 
+## Dockerized read-only demo preparation
+
+A multi-stage [Dockerfile](Dockerfile) builds the React dashboard and serves the generated assets alongside FastAPI on one origin. See [deployment and security notes](DEPLOYMENT.md).
+
+**Deployment status:** Docker build has been added to CI, but a successful frontend or image build has not yet been independently confirmed. No public InfraPulse service is deployed. Public containers should leave the ingestion secret unset so all writes fail closed.
+
 ## Current limitations
 
 This is a **local developer MVP**. Storage is SQLite, not PostgreSQL; there is no multi-tenant login, distributed metrics broker, HTTPS termination, rate limiting, retention policy, query aggregation, or production alert delivery. The collector monitors only configured URLs; it is not a network scanner. The dashboard is read-only. Do not expose the write API publicly without production-grade authentication, secrets handling and network controls. Uptime is not inferred from a single sample and no SLA is claimed.
