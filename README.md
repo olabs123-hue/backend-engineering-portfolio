@@ -1,4 +1,6 @@
 # Backend Engineering Portfolio — Two Services
+> **Looking for my broader Full-Stack & Distributed Systems portfolio?** See the [featured project guide](FEATURED_PROJECTS.md) and [GitHub profile README draft](PROFILE_README.md). This repository itself remains focused on the two backend service demos.
+
 
 Two backend service demos maintained as part of my software engineering portfolio.
 
